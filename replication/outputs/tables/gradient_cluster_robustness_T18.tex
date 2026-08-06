@@ -1,0 +1,23 @@
+\begin{table}[ht]
+\centering
+\caption{Robustness of the SES gradient to clustering standard errors by electoral circuit (the Moulton concern, since deprivation is constant within a circuit), age-18 threshold. Point estimates are invariant to the variance estimator; only standard errors and $p$-values change. `Base' denotes HC1 for the continuous $\Delta\tau$(p10$\to$p90) terms and unclustered for the inverse-variance decile slope test; `clust.' is cluster-robust (CRV1) by circuit. Clustering moves every standard error by at most a few per cent and overturns no inference.}
+\label{tab:cluster_robustness}
+\begin{tabular}{llrrrrr}
+\toprule
+SES & Quantity & Est. (pp) & SE base & $p$ base & SE clust. & $p$ clust. \\
+\midrule
+NBI & $\Delta\tau_M$ (p10$\to$p90) & -7.67 & 1.55 & 0.000 & 1.60 & 0.000 \\
+NBI & $\Delta\tau_F$ (p10$\to$p90) & -10.51 & 1.53 & 0.000 & 1.53 & 0.000 \\
+NBI & $\Delta$(M$-$F) gap (p10$\to$p90) & +2.85 & 2.18 & 0.191 & 2.11 & 0.178 \\
+NBI & Decile slope, men & -1.28 & 0.17 & 0.000 & 0.17 & 0.000 \\
+NBI & Decile slope, women & -1.64 & 0.21 & 0.000 & 0.23 & 0.000 \\
+NBI & Decile slope, M$-$F gap & +0.38 & 0.23 & 0.148 & 0.25 & 0.149 \\
+PCA & $\Delta\tau_M$ (p10$\to$p90) & -10.86 & 1.75 & 0.000 & 1.74 & 0.000 \\
+PCA & $\Delta\tau_F$ (p10$\to$p90) & -14.72 & 1.75 & 0.000 & 1.73 & 0.000 \\
+PCA & $\Delta$(M$-$F) gap (p10$\to$p90) & +3.86 & 2.48 & 0.119 & 2.38 & 0.105 \\
+PCA & Decile slope, men & -1.69 & 0.36 & 0.002 & 0.38 & 0.003 \\
+PCA & Decile slope, women & -2.07 & 0.31 & 0.000 & 0.31 & 0.000 \\
+PCA & Decile slope, M$-$F gap & +0.51 & 0.31 & 0.146 & 0.30 & 0.146 \\
+\bottomrule
+\end{tabular}
+\end{table}

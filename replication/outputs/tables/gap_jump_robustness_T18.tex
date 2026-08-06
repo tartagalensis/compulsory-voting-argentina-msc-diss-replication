@@ -1,0 +1,17 @@
+\begin{table}
+\caption{Jump in the Women$-$Men turnout gap at age 18 across specifications, with the 80\% minimum detectable effect.}
+\label{tab:gap_jump_robustness}
+\begin{tabular}{lrrrrr}
+\toprule
+spec & est & lo & hi & p & mde80 \\
+\midrule
+OLS linear, ±90d & -0.80 & -2.17 & 0.57 & 0.25 & 1.96 \\
+OLS linear, ±180d & -0.49 & -1.46 & 0.47 & 0.32 & 1.38 \\
+OLS linear, ±365d & -0.43 & -1.12 & 0.25 & 0.21 & 0.98 \\
+OLS linear, ±730d & -1.11 & -1.59 & -0.63 & 0.00 & 0.69 \\
+OLS quadratic, ±365d & -0.19 & -1.21 & 0.83 & 0.71 & 1.46 \\
+OLS quadratic, ±730d & -0.07 & -0.79 & 0.66 & 0.85 & 1.03 \\
+rdrobust τF−τM (common h=47d, robust) & -0.59 & -3.59 & 2.42 & 0.70 & 4.29 \\
+\bottomrule
+\end{tabular}
+\end{table}
