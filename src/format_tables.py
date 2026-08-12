@@ -1,7 +1,7 @@
 """
 format_tables.py
 ----------------
-Post-process the LaTeX tables exported to outputs/tables/ so they render
+Post-process the LaTeX tables in replication/outputs/tables/ so they render
 centered and fit within the text margins in the dissertation.
 
 The notebooks export tables via pandas ``to_latex`` wrapped in a ``table``
@@ -16,13 +16,21 @@ each ``*.tex`` table:
 The transformation is idempotent: files that already contain ``\\centering`` are
 left untouched, so it is safe to re-run after regenerating any table.
 
+**Three of the committed tables have not been through it**: triple_cells_T18,
+triple_interaction_T18 and triple_interaction_T70. That is not an oversight to
+correct here — those files are the ones that compiled the submitted PDF, and
+running this script would rewrite them and change how the manuscript renders.
+Run it against a regenerated table, not against the published set, unless the
+document is being recompiled too.
+
 Run:
     python src/format_tables.py
 """
 
 from pathlib import Path
 
-TABLES_DIR = Path(__file__).resolve().parent.parent / "outputs" / "tables"
+TABLES_DIR = (Path(__file__).resolve().parent.parent
+              / "replication" / "outputs" / "tables")
 
 # Shrink to the text width only if the natural width exceeds it.
 RESIZE_OPEN = r"\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%"
