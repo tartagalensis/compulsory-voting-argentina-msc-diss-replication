@@ -1,0 +1,18 @@
+# Local configuration: copy config_template.py to config.py
+config.py
+
+# Data: the electoral register is not redistributable, and the parquet and
+# raw symlinks are large. See the README for how the sources were obtained.
+data/
+
+# Run artifacts
+replication/logs/
+outputs_*_bak/
+
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
