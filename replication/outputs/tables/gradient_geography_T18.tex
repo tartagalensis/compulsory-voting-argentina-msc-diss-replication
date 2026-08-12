@@ -1,0 +1,40 @@
+\begin{table}[ht]
+\centering
+\caption{The socioeconomic gradient in the compulsory-voting effect,
+conditioning on geography (age-18 cutoff).}
+\label{tab:gradient_geography}
+\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lrlrlrlrlrr}
+\toprule
+& \multicolumn{4}{c}{PCA index} & \multicolumn{4}{c}{NBI} & & \\
+\cmidrule(lr){2-5}\cmidrule(lr){6-9}
+Specification & \multicolumn{2}{c}{Men} & \multicolumn{2}{c}{Women}
+              & \multicolumn{2}{c}{Men} & \multicolumn{2}{c}{Women}
+              & $N$ & Circuits \\
+\midrule
+Unconditional & $-12.65^{**}$ & (1.52) & $-17.17^{**}$ & (1.51) & $-8.65^{**}$ & (1.39) & $-11.92^{**}$ & (1.37) & 214,710 & 4,914 \\
++ province fixed effects & $-10.57^{**}$ & (1.57) & $-15.03^{**}$ & (1.61) & $-7.61^{**}$ & (1.45) & $-11.34^{**}$ & (1.42) & 214,710 & 4,914 \\
+Unconditional, density subsample & $-12.65^{**}$ & (1.52) & $-17.18^{**}$ & (1.51) & $-8.59^{**}$ & (1.39) & $-11.88^{**}$ & (1.37) & 214,391 & 4,866 \\
++ log voter density & $-12.88^{**}$ & (1.58) & $-17.41^{**}$ & (1.60) & $-7.94^{**}$ & (1.40) & $-11.25^{**}$ & (1.39) & 214,391 & 4,866 \\
+Urban half of voters & $-9.83^{**}$ & (2.18) & $-13.74^{**}$ & (2.34) & $-5.12^{*}$ & (2.22) & $-9.48^{**}$ & (2.14) & 106,913 & 1,189 \\
+Rural half of voters & $-14.77^{**}$ & (2.08) & $-19.73^{**}$ & (2.08) & $-10.44^{**}$ & (1.81) & $-12.73^{**}$ & (1.86) & 107,478 & 3,677 \\
+\bottomrule
+\end{tabular}%
+}
+\par\vspace{0.6em}
+{\footnotesize\begin{minipage}{\linewidth}\emph{Note:} Each cell is
+$\Delta\tau$, the change in the estimated cutoff effect from the 10th to the
+90th percentile of the deprivation measure, in percentage points, with its
+standard error in parentheses. Every row is the same continuous model as
+Table~\ref{tab:triple_cells_T18}, fit in the same MSE-optimal window
+($\approx$66 days), with standard errors clustered by electoral circuit (CRV1).
+Each conditioning variable is interacted with $(1, x, T, Tx)$, so the
+discontinuity itself is free to differ across provinces and across levels of
+density. Urban and rural halves split at the median log voter density, so each
+holds half the voters in the window; the urban half holds them in far fewer
+circuits. Density is unavailable for $0.15\%$ of the window, so the last three
+rows are read against the subsample row above them rather than against the
+first. The first row reproduces the estimate reported in
+Section~\ref{sec:res_ses}. $^{*}p<.05$, $^{**}p<.01$.
+\end{minipage}}
+\end{table}

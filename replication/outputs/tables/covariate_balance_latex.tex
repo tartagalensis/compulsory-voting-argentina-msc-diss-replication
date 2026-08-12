@@ -1,0 +1,18 @@
+\begin{table}[ht]
+\centering
+\caption{Formal covariate balance at both thresholds. Each row is a separate RD estimate with the covariate as the outcome, using the same \texttt{rdrobust} machinery, MSE-optimal bandwidth and cluster-robust (CRV1, by circuit) standard errors as Table~\ref{tab:rdd_results}. Clustering is not optional for NBI and the PCA index, which are constant within a circuit, so that unclustered standard errors understate their uncertainty. No covariate shows a detectable discontinuity at either cutoff.}
+\label{tab:balance_formal}
+\begin{tabular}{llrrcr}
+\toprule
+Threshold & Covariate & Estimate & $p$ & 95\% robust CI & BW (days) \\
+\midrule
+T18 & \% Female & -0.0006 & 0.761 & $[-0.0053,\,+0.0044]$ & 336 \\
+T18 & NBI & -0.0005 & 0.762 & $[-0.0041,\,+0.0023]$ & 213 \\
+T18 & PCA index & -0.0124 & 0.793 & $[-0.1203,\,+0.0677]$ & 189 \\
+\midrule
+T70 & \% Female & +0.0035 & 0.300 & $[-0.0040,\,+0.0114]$ & 256 \\
+T70 & NBI & +0.0009 & 0.492 & $[-0.0021,\,+0.0033]$ & 275 \\
+T70 & PCA index & +0.0158 & 0.738 & $[-0.0932,\,+0.0950]$ & 179 \\
+\bottomrule
+\end{tabular}
+\end{table}
