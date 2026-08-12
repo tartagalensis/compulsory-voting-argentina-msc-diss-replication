@@ -17,7 +17,7 @@ The transformation is idempotent: files that already contain ``\\centering`` are
 left untouched, so it is safe to re-run after regenerating any table.
 
 Run:
-    /opt/anaconda3/envs/franco_env/bin/python src/format_tables.py
+    python src/format_tables.py
 """
 
 from pathlib import Path

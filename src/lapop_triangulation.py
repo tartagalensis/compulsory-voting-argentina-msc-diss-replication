@@ -10,7 +10,7 @@ the 2023 AmericasBarometer (Argentina): variable ``vb2`` (reported vote in the
 Source: LAPOP Lab, AmericasBarometer Argentina 2023.
 
 Run:
-    /opt/anaconda3/envs/franco_env/bin/python src/lapop_triangulation.py
+    python src/lapop_triangulation.py
 
 The .dta lives under data/raw/ (not tracked by git); the path is resolved relative
 to the repository root so the script is machine-independent.
