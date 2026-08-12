@@ -2070,7 +2070,7 @@ def plot_gap_jump_robustness(df, figures_dir, threshold=18,
 # ─────────────────────────────────────────────────────────────────────────────
 
 def unpack_triple_interaction(df, ses_var, threshold=18, bandwidth_max=365*3,
-                              alpha_level=0.05, cluster_var=None):
+                              alpha_level=0.05, cluster_var=None, bandwidth=None):
     """
     Unpack the CV × sex × SES triple interaction at the age-`threshold` cutoff
     from the continuous spec (`run_ses_continuous_interaction`: a single OLS
@@ -2082,6 +2082,11 @@ def unpack_triple_interaction(df, ses_var, threshold=18, bandwidth_max=365*3,
     column name is given the OLS uses cluster-robust (CRV1) SEs on it (e.g. the
     electoral circuit), otherwise HC1. All reported SEs (triple coefficient and
     the four sex × SES cells) inherit that estimator.
+
+    `bandwidth` is also passed straight through: None (the default) fits inside
+    the unconditional MSE-optimal rdrobust bandwidth, which is what every
+    reported estimate uses; an explicit value in days fits inside that window
+    instead, which is how the θ1 bandwidth-sensitivity sweep is produced.
 
     Returns
     -------
@@ -2096,7 +2101,7 @@ def unpack_triple_interaction(df, ses_var, threshold=18, bandwidth_max=365*3,
     from scipy.stats import norm
 
     r = run_ses_continuous_interaction(
-        df, ses_var=ses_var, threshold=threshold, bandwidth=None,
+        df, ses_var=ses_var, threshold=threshold, bandwidth=bandwidth,
         poly_degree=1, bandwidth_max=bandwidth_max, verbose=False,
         cluster_var=cluster_var)
     ols = r['ols']
@@ -2209,7 +2214,7 @@ def plot_triple_cells_grouped(cells_by_ses, figures_dir, value='tau',
     print(f"Saved: {figures_dir}/{fname}")
 
 def plot_gender_gap_baseline_endpoint(cells, ses_var, figures_dir, threshold=18,
-                                      filename=None):
+                                      filename=None, gap_test=None):
     """
     Slope chart of the gender turnout gap from voluntary to compulsory voting at
     the age-`threshold` cutoff, by SES level — the "start → end" view behind the
@@ -2219,8 +2224,17 @@ def plot_gender_gap_baseline_endpoint(cells, ses_var, figures_dir, threshold=18,
     `sex`, `ses_level`, `baseline`, `tau` in probability units). For each SES
     level a sub-panel plots, per sex, the voluntary-side baseline (x=0⁻) and the
     compulsory-side endpoint (baseline + τ, x=0⁺) connected by a line. The F−M
-    gap at each end is annotated, and the panel title reports whether the gap
-    narrows (convergence) or widens. Returns a tidy DataFrame of the gaps.
+    gap at each end is annotated, and the panel title reports the change in that
+    gap.
+
+    `gap_test` is the frame written to gender_gap_ses_test_T18.csv (columns
+    `ses_var`, `ses_level`, `p`), the joint clustered test of the gap change at
+    the same anchors. Pass it so each panel carries the p-value of its own
+    change; without it the panel reports the change alone. It must never report
+    a bare direction word: the change at the low anchor is +0.7pp (p=.57) under
+    the PCA index and -0.05pp under NBI, so a "widens"/"narrows" verdict there
+    labels sampling noise, and labels it in opposite directions across the two
+    measures. Returns a tidy DataFrame of the gaps.
     """
     os.makedirs(figures_dir, exist_ok=True)
     cF, cM = '#c44e52', '#4c72b0'
@@ -2250,10 +2264,18 @@ def plot_gender_gap_baseline_endpoint(cells, ses_var, figures_dir, threshold=18,
         bgap = ends['Women'][0] - ends['Men'][0]
         egap = ends['Women'][1] - ends['Men'][1]
         change = egap - bgap
-        # 'converges' asserted a finding the design does not license: the change at
-        # p90 is -2.9pp with a CI touching zero, and Sec. 6.3 calls the
-        # SES-conditionality descriptive only. The panel reports direction only.
-        verdict = 'narrows' if change < 0 else 'widens'
+        # Report the change, never a direction word. 'narrows'/'widens' asserted a
+        # finding the design does not license at the low anchor, where the change
+        # is inside its own standard error (see the docstring). The p-value comes
+        # from the joint clustered test, not from the differenced cell levels.
+        if gap_test is not None:
+            g = gap_test[(gap_test['ses_var'] == ses_var)
+                         & (gap_test['ses_level'] == lvl)]
+            pv = float(g.iloc[0]['p'])
+            verdict = (f'change {change:+.1f}pp, '
+                       + ('p<.01' if pv < 0.01 else f'p={pv:.2f}'))
+        else:
+            verdict = f'change {change:+.1f}pp'
         rows.append({'ses_var': ses_var, 'ses_level': lvl,
                      'base_gap_pp': bgap, 'end_gap_pp': egap, 'change_pp': change})
         ax.set_xlim(-0.35, 1.35)

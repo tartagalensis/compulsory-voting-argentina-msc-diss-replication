@@ -186,6 +186,113 @@ else:
     print(cells_tau.round(3).to_string(index=False))
     _log(f"Saved: {os.path.basename(cells_csv_18)}")
 
+# ── Step 1b — bandwidth sensitivity of theta1 and the p10/p90 cells (T18) ──
+# Added 2026-08-07. With the corrected election date theta1 became significant
+# on the composite index (PCA p=.028) and marginal on NBI (p=.066), where both
+# were null before. It crossed the threshold through a SMALLER standard error
+# (the corrected cutoff widened the MSE-optimal window from 47.4d to 65.9d),
+# not through a larger point estimate -- so the obvious question is whether the
+# result survives outside the optimal window. Every other headline estimate in
+# the thesis carries a bandwidth sweep (Appendix B); a newly positive finding
+# needs one too. Same continuous spec, same CRV1-by-circuit SEs, only the
+# fitting window changes.
+#
+# The F-M gap change at the p10/p90 anchors is swept alongside it. Those two
+# contrasts ALSO turned significant with the corrected date (PCA p90 .0505 ->
+# .0045, NBI p90 .077 -> .009), and they come off the same fit as theta1, so
+# demanding a sweep of theta1 while exempting them would be incoherent -- and
+# it costs no extra estimation, only three linear contrasts per fit.
+THETA1_BW_GRID = [30, 45, 60, 90, 120, 180, 240]
+theta1_bw_csv = f"{REP_TABLES}/triple_bw_sensitivity_T18.csv"
+
+if os.path.exists(theta1_bw_csv):
+    _log(f"resume guard: {os.path.basename(theta1_bw_csv)} exists, skipping step 1b")
+    theta1_bw = pd.read_csv(theta1_bw_csv)
+else:
+    _log(f"starting theta1 bandwidth sweep (step 1b): {THETA1_BW_GRID} + MSE-optimal")
+    _rows = []
+    for ses in SES_MEASURES:
+        for _bw in THETA1_BW_GRID + [None]:      # None => the MSE-optimal window
+            _t, _ = unpack_triple_interaction(
+                df, ses_var=ses, threshold=18, bandwidth_max=BANDWIDTH_MAX,
+                cluster_var='cluster_id', bandwidth=_bw)
+            _ols = _t['ols']
+            _nb = len(_ols.params)
+            assert _ols.cov_type == 'cluster', _ols.cov_type
+
+            # Three quantities off the SAME fit, so the sweep costs no extra
+            # estimation: theta1 (col 14), and the F-M gap change at the cutoff
+            # (col 10 + col 14 * ses) evaluated at this window's p10 and p90.
+            # The SES anchors are re-derived inside each window, so they shift a
+            # little with the bandwidth; `ses_anchor` records the value used.
+            _specs = [('theta1', {14: 1.0}, np.nan)]
+            for _lvl, _sv in [('gap_change_p10', _t['p10']),
+                              ('gap_change_p90', _t['p90'])]:
+                _specs.append((_lvl, {10: 1.0, 14: _sv}, _sv))
+
+            for _q, _idx_w, _anchor in _specs:
+                _c = np.zeros(_nb)
+                for _i, _w in _idx_w.items():
+                    _c[_i] = _w
+                _tt = _ols.t_test(_c)
+                _rows.append({
+                    'ses_var': ses,
+                    'bw_days': _t['bw_days'],
+                    'is_mse_optimal': _bw is None,
+                    'quantity': _q,
+                    'ses_anchor': _anchor,
+                    'coef_pp': float(np.ravel(_tt.effect)[0]) * 100,
+                    'se_pp': float(np.ravel(_tt.sd)[0]) * 100,
+                    'z': float(np.ravel(_tt.tvalue)[0]),
+                    'p': float(np.ravel(_tt.pvalue)[0]),
+                })
+            _msg = "  ".join(
+                f"{r['quantity']}={r['coef_pp']:+.2f}pp(p={r['p']:.3f})"
+                for r in _rows[-3:])
+            _log(f"  {ses} bw={_t['bw_days']:6.1f}d"
+                 f"{' (MSE-opt)' if _bw is None else '         '}: {_msg}")
+    theta1_bw = pd.DataFrame(_rows).sort_values(['ses_var', 'quantity', 'bw_days'])
+    theta1_bw.to_csv(theta1_bw_csv, index=False)
+    print("theta1 and the F-M gap change at p10/p90 across fitting bandwidths "
+          "— T18, CRV1 by circuit")
+    print(theta1_bw.round(4).to_string(index=False))
+    _log(f"Saved: {os.path.basename(theta1_bw_csv)}")
+
+    _lbl = {'nbi': 'NBI', 'pca_index': 'PCA'}
+    _lines = [
+        r"\begin{table}[ht]", r"\centering",
+        (r"\caption{Bandwidth sensitivity at the age-18 threshold of the "
+         r"triple-interaction coefficient $\theta_1$ (CV~$\times$~sex~$\times$~SES) "
+         r"and of the female--male gap change at the most-deprived anchor (p90). "
+         r"Both are read off the same fit, with the continuous specification and "
+         r"cluster-robust (CRV1, by circuit) standard errors of "
+         r"Table~\ref{tab:triple_T18}; only the fitting window changes. "
+         r"$\dagger$ marks the MSE-optimal window, which is the one the reported "
+         r"estimates use. The p90 anchor is re-derived inside each window.}"),
+        r"\label{tab:triple_bw}",
+        r"\begin{tabular}{lrrrrr}", r"\toprule",
+        (r"& & \multicolumn{2}{c}{$\theta_1$} & "
+         r"\multicolumn{2}{c}{Gap change at p90} \\"),
+        r"\cmidrule(lr){3-4}\cmidrule(lr){5-6}",
+        r"SES & BW (days) & Est. (pp) & $p$ & Est. (pp) & $p$ \\", r"\midrule",
+    ]
+    for _ses in SES_MEASURES:
+        _s = theta1_bw[theta1_bw['ses_var'] == _ses]
+        _th = _s[_s['quantity'] == 'theta1'].set_index('bw_days')
+        _g9 = _s[_s['quantity'] == 'gap_change_p90'].set_index('bw_days')
+        for _bwv in sorted(_th.index):
+            _star = r"$^\dagger$" if _th.loc[_bwv, 'is_mse_optimal'] else ""
+            _lines.append(
+                f"{_lbl[_ses]} & {_bwv:.1f}{_star} & "
+                f"{_th.loc[_bwv, 'coef_pp']:+.2f} & {_th.loc[_bwv, 'p']:.3f} & "
+                f"{_g9.loc[_bwv, 'coef_pp']:+.2f} & {_g9.loc[_bwv, 'p']:.3f} \\\\")
+        if _ses != SES_MEASURES[-1]:
+            _lines.append(r"\midrule")
+    _lines += [r"\bottomrule", r"\end{tabular}", r"\end{table}"]
+    with open(f"{REP_TABLES}/triple_bw_sensitivity_T18.tex", 'w') as _fh:
+        _fh.write("\n".join(_lines) + "\n")
+    _log("Saved: triple_bw_sensitivity_T18.tex")
+
 # ── Step 2 / cell 9b — decile-stratified cross-check at D1/D10 ─────────────
 xcheck_csv = f"{REP_TABLES}/triple_cells_decile_xcheck_T18.csv"
 if os.path.exists(xcheck_csv):
@@ -268,10 +375,15 @@ if os.path.exists(gap_be_pca_png) and os.path.exists(gap_be_nbi_png):
          "skipping cell 15")
 else:
     _log("starting slope charts (cell 15): pca_index primary, nbi robustness")
+    # Read the gap test off disk rather than the in-scope frame: cell 7 sits
+    # behind its own resume guard and may not have run in this invocation.
+    gap_test_plot = pd.read_csv(gaptest_csv)
     gap_be_pca = plot_gender_gap_baseline_endpoint(
-        cells_by_ses['pca_index'], 'pca_index', REP_FIGURES, threshold=18)
+        cells_by_ses['pca_index'], 'pca_index', REP_FIGURES, threshold=18,
+        gap_test=gap_test_plot)
     gap_be_nbi = plot_gender_gap_baseline_endpoint(
-        cells_by_ses['nbi'], 'nbi', REP_FIGURES, threshold=18)
+        cells_by_ses['nbi'], 'nbi', REP_FIGURES, threshold=18,
+        gap_test=gap_test_plot)
     _log("Saved: gender_gap_baseline_endpoint_pca_index_T18.png, "
          "gender_gap_baseline_endpoint_nbi_T18.png")
 
@@ -398,11 +510,16 @@ else:
     # The cell table is routinely misread against the stratified per-cell rows of
     # Table~\ref{tab:rdd_results}, which are fit at their own bandwidths and so
     # need not agree with these.
+    # The window is READ from the fitted bandwidth, not hardcoded. It used to say
+    # "47 days", which silently went stale when the election-date correction moved the
+    # pooled MSE-optimal h from 47.4 to 65.9 days, leaving a generated artifact
+    # asserting a bandwidth the same run contradicted in the table beside it.
+    _BW_CELLS = float(triple_df["bw_days"].iloc[0])
     _NOTE_CELLS = (
         "Cells are marginal effects from the continuous triple-interaction model "
         "(Section~\\ref{sec:strat_hetero}, Equation~\\ref{eq:triple}), evaluated at "
         "the 10th and 90th percentiles of the SES measure within the pooled "
-        "MSE-optimal window ($\\approx$47 days). They are not the stratified "
+        f"MSE-optimal window ($\\approx${_BW_CELLS:.0f} days). They are not the stratified "
         "per-cell RD estimates of Table~\\ref{tab:rdd_results}, each of which is "
         "fit at its own bandwidth, and the two need not coincide. Standard errors "
         "clustered by electoral circuit (CRV1)."

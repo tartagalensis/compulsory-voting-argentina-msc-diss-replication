@@ -38,4 +38,4 @@ REPLICATION_OUTPUTS = os.path.join(ROOT, "replication", "outputs")
 GEO_PROVINCIAS = "/path/to/geoAr/data/provincias_simplified.geojson"
 
 # Election date
-ELECTION_DATE = "2025-10-25"
+ELECTION_DATE = "2025-10-26"

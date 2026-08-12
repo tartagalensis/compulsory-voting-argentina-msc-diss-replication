@@ -23,7 +23,7 @@ Pipeline steps:
 Output variables (individual level):
     circuit_id    — Electoral circuit identifier
     province_id   — Electoral province identifier
-    age_days      — Age in days as of election day (October 25, 2025)
+    age_days      — Age in days as of election day (October 26, 2025)
     days_from_18  — Days from the 18-year compulsory voting threshold
     days_from_70  — Days from the 70-year voluntary voting threshold
     compulsory    — 1 if subject to compulsory voting, 0 otherwise
@@ -83,7 +83,7 @@ PROVINCE_CONFIGS = {
     24: {"name": "TdF",        "geo_file": "TdF.geojson",         "padron_file": "G 2025 24 PADINF con fecnac (anonimizado).txt", "indec_code": 94},
 }
 
-ELECTION_DATE = pd.Timestamp('2025-10-25')
+ELECTION_DATE = pd.Timestamp('2025-10-26')
 
 # Census column names for PCA deprivation features (from INDEC Censo 2022)
 _DEPRIVATION_COLS = {
@@ -308,7 +308,7 @@ def load_padron(province_id):
     age, age_days, days_from_18, days_from_70, compulsory, voted, gender.
 
     days_from_18 / days_from_70 are signed distances from each threshold on
-    election day (Oct 25, 2025), computed via relativedelta to handle leap years.
+    election day (Oct 26, 2025), computed via relativedelta to handle leap years.
     Positive = past threshold (e.g. already turned 18).
     """
     config = PROVINCE_CONFIGS[province_id]

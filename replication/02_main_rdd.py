@@ -219,27 +219,79 @@ if os.path.exists(f"{REP_TABLES}/covariate_balance.csv"):
 else:
     print("Formal covariate balance — rdrobust with covariates as outcome")
     print("=" * 60)
-    SAMPLE = 500_000
+    # Clustered by circuit, on the FULL window (2026-08-08). This block used to run
+    # unclustered on a 500k random sample, which made it the one place in the paper
+    # departing from the paper's own variance scheme -- and it departed exactly where
+    # it matters most: `nbi` and `pca_index` are CONSTANT within a circuit, the purest
+    # form of the Moulton problem, so unclustered SEs on ~218k individuals drawn from
+    # ~5.9k circuits understate uncertainty badly. Appendix Table 5 and the Section 6.2
+    # footnote already argue that clustering is the right estimator for exactly these
+    # variables ("HC1 understates their SEs"), so testing balance without it contradicted
+    # the thesis's own stated scheme. `% Female` is individual-level and does not need
+    # the correction, but is run the same way for comparability.
     balance_results = []
     for label, d, rv in [("T18", d18, "days_from_18"), ("T70", d70, "days_from_70")]:
-        d_s = d.sample(n=min(SAMPLE, len(d)), random_state=42)
         for cov_label, y_vals in [
-            ("% Female",  (d_s["gender"] == "F").astype(float).values),
-            ("NBI",        d_s["nbi"].values),
-            ("PCA index",  d_s["pca_index"].values),
+            ("% Female",  (d["gender"] == "F").astype(float).values),
+            ("NBI",        d["nbi"].values),
+            ("PCA index",  d["pca_index"].values),
         ]:
-            r = rdrobust(y=y_vals, x=d_s[rv].values, c=0, masspoints="off")
+            r = rdrobust(y=y_vals, x=d[rv].values, c=0, masspoints="off",
+                         cluster=d["cluster_id"].values)
             coef  = float(r.coef.iloc[0, 0])
             pval  = float(r.pv.iloc[0, 0])
             ci_lo = float(r.ci.iloc[2, 0])
             ci_hi = float(r.ci.iloc[2, 1])
+            bw    = float(r.bws.iloc[0, 0])
             status = "OK" if pval > 0.05 else "FAIL"
             print(f"  [{status}] {label} | {cov_label:<12} coef={coef:+.4f}  p={pval:.3f}  robust CI=[{ci_lo:.4f}, {ci_hi:.4f}]")
             balance_results.append({"threshold": label, "covariate": cov_label,
                                      "coef": round(coef, 4), "p_value": round(pval, 4),
-                                     "robust_ci_low": round(ci_lo, 4), "robust_ci_high": round(ci_hi, 4)})
+                                     "robust_ci_low": round(ci_lo, 4), "robust_ci_high": round(ci_hi, 4),
+                                     "bw_days": round(bw, 1), "n_eff": int(r.N_h[0] + r.N_h[1])})
             _log(f"balance estimate done: {label} | {cov_label}")
     pd.DataFrame(balance_results).to_csv(f"{REP_TABLES}/covariate_balance.csv", index=False)
+    print("Saved: covariate_balance.csv")
+
+# ── LaTeX export of the balance table ────────────────────────────────────
+# Added 2026-08-08. The formal test had always been computed but never printed:
+# the manuscript showed only the binned-means figure, whose caption asserted the
+# absence of a discontinuity that no table in the document substantiated. Guarded
+# on the .tex (not the CSV) so it can be produced without recomputing the test.
+_balance_tex = f"{REP_TABLES}/covariate_balance_latex.tex"
+if os.path.exists(_balance_tex):
+    _log("resume guard: covariate_balance_latex.tex exists, skipping LaTeX export")
+else:
+    _bal = pd.read_csv(f"{REP_TABLES}/covariate_balance.csv")
+    _rows = [
+        r"\begin{table}[ht]", r"\centering",
+        (r"\caption{Formal covariate balance at both thresholds. Each row is a separate "
+         r"RD estimate with the covariate as the outcome, using the same \texttt{rdrobust} "
+         r"machinery, MSE-optimal bandwidth and cluster-robust (CRV1, by circuit) standard "
+         r"errors as Table~\ref{tab:rdd_results}. Clustering is not optional for NBI and "
+         r"the PCA index, which are constant within a circuit, so that unclustered "
+         r"standard errors understate their uncertainty. No covariate shows a detectable "
+         r"discontinuity at either cutoff.}"),
+        r"\label{tab:balance_formal}",
+        r"\begin{tabular}{llrrcr}", r"\toprule",
+        r"Threshold & Covariate & Estimate & $p$ & 95\% robust CI & BW (days) \\",
+        r"\midrule",
+    ]
+    for _t in ("T18", "T70"):
+        for _, _r in _bal[_bal["threshold"] == _t].iterrows():
+            _rows.append(
+                # `% Female` would open a LaTeX comment and swallow the rest of the row
+                f"{_r['threshold']} & {_r['covariate'].replace('%', chr(92) + '%')} & "
+                f"{_r['coef']:+.4f} & "
+                f"{_r['p_value']:.3f} & "
+                f"$[{_r['robust_ci_low']:+.4f},\\,{_r['robust_ci_high']:+.4f}]$ & "
+                f"{_r['bw_days']:.0f} \\\\")
+        if _t == "T18":
+            _rows.append(r"\midrule")
+    _rows += [r"\bottomrule", r"\end{tabular}", r"\end{table}"]
+    with open(_balance_tex, "w") as _fh:
+        _fh.write("\n".join(_rows) + "\n")
+    _log("Saved: covariate_balance_latex.tex")
     print("Saved: covariate_balance.csv")
 
 # ── RDD — THRESHOLD 18 ───────────────────────────────────────────────────
@@ -617,10 +669,14 @@ _note = (
     "\\par\\vspace{0.6em}\n"
     "{\\footnotesize\\begin{minipage}{\\linewidth}\\emph{Note:} Standard errors "
     "clustered by electoral circuit (CRV1); inference uses the robust, "
-    "bias-corrected 95\\% confidence intervals of \\citet{calonico2014}. Each row "
-    "is estimated at its own MSE-optimal bandwidth (column BW), so the pooled "
-    "(Total) estimate need not fall between the sex- or stratum-specific "
-    "ones.\\end{minipage}}\n"
+    "bias-corrected 95\\% confidence intervals of \\citet{calonico2014}. Low and "
+    "High strata split each measure at its voter-weighted national median. Each "
+    "row is estimated at its own MSE-optimal bandwidth (column BW), so the pooled "
+    "(Total) estimate need not fall between the sex- or stratum-specific ones. "
+    "For the Total, Female and Male rows that bandwidth is selected without "
+    "clustering and only the variance is then re-estimated with it, so their "
+    "point estimates and windows do not depend on the standard-error "
+    "scheme.\\end{minipage}}\n"
 )
 latex_str = latex_str.replace("\\end{table}", _note + "\\end{table}", 1)
 with open(f"{REP_TABLES}/rdd_results_latex.tex", "w") as fout:
