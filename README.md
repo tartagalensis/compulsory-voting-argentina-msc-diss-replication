@@ -29,19 +29,24 @@ analysing that register, not redistributing it, so it is not in this repository
 and neither stage runs without it. The table below documents how it was
 obtained.
 
-Two smaller caveats. `verify.py` checks completeness by parsing the thesis
-LaTeX sources, which live in the author's working repository, so it fails here
-and takes `run_all.py`'s final step with it. And several docstrings carry
+What you can run without the register is `verify.py`, which confirms all 34
+artifacts are present. It needs nothing but the standard library:
+
+```bash
+python replication/verify.py
+```
+
+One thing that may look like a missing file but is not: several docstrings carry
 provenance comments pointing at the exploratory notebooks the scripts were
-transcribed from (`transcribed from notebooks/04_rdd.ipynb, cell 9`); those
-notebooks are not part of the replication and are not missing files.
+transcribed from (`transcribed from notebooks/04_rdd.ipynb, cell 9`). Those
+notebooks are not part of the replication.
 
 ## Contents
 
 ```
 replication/            the numbered scripts and their outputs
   run_all.py            orchestrator: Stage B, then verify
-  verify.py             checks every artifact the thesis references exists
+  verify.py             checks all 34 artifacts are present; stdlib only
   00_build_data.py      Stage A: raw sources -> data/final/national.parquet
   00b_spatial_illustration.py   Stage A: the Appendix A join figure
   00c_fix_election_date.py      one-shot date migration, already applied
